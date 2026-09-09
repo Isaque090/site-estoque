@@ -6,8 +6,6 @@ if (!isset($_SESSION['login'])) {
 } else if ($_SESSION['login'] == false) {
     header('location:login.php');
 }
-
-
 $smt = $conexao->prepare('select ds_cargo from Funcionarios where ds_email=? ');
 $smt->bind_param('s', $_SESSION['email']);
 $smt->execute();
@@ -243,11 +241,11 @@ if (isset($_SESSION['cargo'])) {
     </nav>
     <aside class="sidebar">
         <div class="menu">
-            <div class="menu-titulo"> Menu </div> <a href="index.php" class="ativo"> <span class="icone">🏠</span>
+            <div class="menu-titulo"> Menu </div> <a href="index.php" > <span class="icone">🏠</span>
                 <span>Dashboard</span> </a> <a href="produtos.php"> <span class="icone">📦</span> <span>Produtos</span>
             </a> 
              <?php if (isset($_SESSION['cargo']) && $_SESSION['cargo'] == 'admin' ||  $_SESSION['cargo'] == 'estoquista'  ): ?>
-            <a href="categorias.php" > <span class="icone">🏷️</span> 
+            <a href="categorias.php" class="ativo" > <span class="icone">🏷️</span> 
             <span>Categorias</span> </a> 
                <?php endif ?>
             <a
