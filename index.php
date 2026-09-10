@@ -45,7 +45,12 @@ $sql = "SELECT COUNT(*) AS quantidade FROM funcionarios";
 $resultado = $conexao->query($sql);
 $funcionario = $resultado->fetch_assoc();
 $quantidadeFuncionarios = $funcionario['quantidade'];
-$sql = "SELECT DATE(dt_venda) AS dia, SUM(vl_total) AS valor FROM vendas GROUP BY DATE(dt_venda) ORDER BY dia ASC";
+$sql = "SELECT 
+            DATE(dt_venda) AS dia, 
+            SUM(vl_total) AS valor
+        FROM vendas
+        GROUP BY DATE(dt_venda)
+        ORDER BY dia ASC";
 
 $resultado = $conexao->query($sql);
 

@@ -15,6 +15,7 @@ if (isset($_POST['entrar'])) {
         if ($funcionario['status'] == "ativo") {
 
             $_SESSION['email'] = $funcionario['ds_email'];
+             $_SESSION['id'] = $funcionario['cd_funcionario'];
             $_SESSION['cargo'] = $funcionario['ds_cargo'];
             $_SESSION['nome']=$funcionario['nm_funcionario'];
             $_SESSION['login']=true;

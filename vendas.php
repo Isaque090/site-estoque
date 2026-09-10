@@ -87,12 +87,23 @@ if (isset($_POST['cadastrar'])) {
     header('location:vendas.php');
     exit;
 }
+$id = $_SESSION['id'];
+if($_SESSION['cargo']!="admin"){
 
+$sql = "SELECT v.cd_venda, v.dt_venda, v.vl_total, f.nm_funcionario
+        FROM vendas v
+        INNER JOIN Funcionarios f ON v.id_funcionario = f.cd_funcionario
+        WHERE f.cd_funcionario = $id
+        ORDER BY v.dt_venda DESC";
+
+}
+else{
 
 $sql = "SELECT v.cd_venda, v.dt_venda, v.vl_total, f.nm_funcionario
         FROM vendas v
         INNER JOIN Funcionarios f ON v.id_funcionario = f.cd_funcionario
         ORDER BY v.dt_venda DESC";
+}
 $result = $conexao->query($sql);
 
 
@@ -176,7 +187,7 @@ if (isset($_GET['ver_itens'])) {
         <table class="table table-striped table-hover">
             <thead>
                 <tr>
-                    <th>Código</th>
+                   
                     <th>Data</th>
                     <th>Funcionário</th>
                     <th>Valor Total</th>
@@ -187,7 +198,7 @@ if (isset($_GET['ver_itens'])) {
                 <?php if ($result && $result->num_rows > 0): ?>
                     <?php while ($venda = $result->fetch_assoc()): ?>
                         <tr>
-                            <td><?= $venda['cd_venda'] ?></td>
+                        
                             <td><?= date('d/m/Y H:i', strtotime($venda['dt_venda'])) ?></td>
                             <td><?= htmlspecialchars($venda['nm_funcionario']) ?></td>
                             <td>R$ <?= number_format($venda['vl_total'], 2, ',', '.') ?></td>
