@@ -20,7 +20,7 @@ if (isset($_POST['entrar'])) {
             $_SESSION['login']=true;
             header('location:index.php');
         } else {
-            echo "Conta Deletada, fale com algum administrador";
+            $nExiste  ="Conta Deletada, fale com algum administrador";
         }
 
 

@@ -7,20 +7,21 @@
         }
 
         body {
-            background: #f1f5f9;
-            color: #1e293b;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e2e8f0;
         }
-
 
         .navbar {
             height: 65px;
             width: 100%;
-            background: #ffffff;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 25px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
             position: fixed;
             top: 0;
             left: 0;
@@ -30,7 +31,7 @@
         .logo {
             font-size: 22px;
             font-weight: bold;
-            color: #2563eb;
+            color: #38bdf8;
         }
 
         .usuario {
@@ -45,11 +46,12 @@
 
         .usuario-nome {
             font-weight: bold;
+            color: #f1f5f9;
         }
 
         .usuario-cargo {
             font-size: 12px;
-            color: #64748b;
+            color: #94a3b8;
         }
 
         .btn-sair {
@@ -65,19 +67,19 @@
             background: #dc2626;
         }
 
-
         .sidebar {
             position: fixed;
             top: 65px;
             left: 0;
             width: 240px;
             height: calc(100vh - 65px);
-            background: #1e293b;
+            background: rgba(15, 23, 42, 0.95);
+            border-right: 1px solid rgba(148, 163, 184, 0.1);
             padding: 20px 12px;
         }
 
         .menu-titulo {
-            color: #94a3b8;
+            color: #64748b;
             font-size: 12px;
             text-transform: uppercase;
             padding: 10px 15px;
@@ -88,7 +90,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            color: #cbd5e1;
+            color: #94a3b8;
             text-decoration: none;
             padding: 13px 15px;
             margin-bottom: 5px;
@@ -97,12 +99,12 @@
         }
 
         .menu a:hover {
-            background: #334155;
-            color: white;
+            background: rgba(56, 189, 248, 0.15);
+            color: #e0f2fe;
         }
 
         .menu a.ativo {
-            background: #2563eb;
+            background: #0ea5e9;
             color: white;
         }
 
@@ -110,7 +112,6 @@
             width: 25px;
             text-align: center;
         }
-
 
         .conteudo {
             margin-left: 240px;
@@ -126,17 +127,18 @@
 
         .cabecalho-pagina h1 {
             font-size: 28px;
+            color: #f1f5f9;
         }
 
         .cabecalho-pagina p {
-            color: #64748b;
+            color: #94a3b8;
             margin-top: 5px;
         }
 
         .btn-adicionar {
-            background: #2563eb;
+            background: #0ea5e9;
             color: white;
-            text-decoration: none;
+            border: none;
             padding: 12px 18px;
             border-radius: 7px;
             font-weight: bold;
@@ -144,25 +146,71 @@
         }
 
         .btn-adicionar:hover {
-            background: #1d4ed8;
+            background: #0284c7;
+            color: white;
         }
 
 
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        .table {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            color: #e2e8f0;
         }
 
-        .card h2 {
-            margin-bottom: 10px;
+        .table thead th {
+            background: rgba(15, 23, 42, 0.9) !important;
+            color: #e2e8f0 !important;
+            border: none;
         }
 
-        .card p {
-            color: #64748b;
+        .table td,
+        .table th {
+            border-color: rgba(148, 163, 184, 0.15) !important;
+            vertical-align: middle;
         }
 
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(255, 255, 255, 0.03);
+            color:#fff;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(108, 202, 243, 0.41) !important;
+        }
+
+
+        .modal-content {
+            background: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .modal-footer {
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .form-control {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: #f1f5f9;
+        }
+
+        .form-control:focus {
+            background-color: rgba(15, 23, 42, 0.8);
+            border-color: #0ea5e9;
+            color: #f1f5f9;
+            box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.25);
+        }
+
+        .close {
+            color: #e2e8f0;
+            opacity: 0.8;
+        }
 
         @media (max-width: 700px) {
             .sidebar {
@@ -195,4 +243,3 @@
                 gap: 15px;
             }
         }
-  

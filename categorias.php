@@ -3,23 +3,92 @@ include_once('inc/config.php');
 session_start();
 if (!isset($_SESSION['login'])) {
     header('location:login.php');
+    exit;
 } else if ($_SESSION['login'] == false) {
     header('location:login.php');
+    exit;
 }
-$smt = $conexao->prepare('select ds_cargo from Funcionarios where ds_email=? ');
+
+
+$smt = $conexao->prepare('select ds_cargo,status from funcionarios where ds_email=? ');
 $smt->bind_param('s', $_SESSION['email']);
 $smt->execute();
 
 $resultado = $smt->get_result();
 $cargo = $resultado->fetch_assoc();
+if ($cargo['status'] != "ativo") {
+    header('location:logout.php');
+    exit;
+}
+
+if ($cargo['ds_cargo'] == "vendedor" ) {
+    header('location:index.php');
+    exit;
+}
 if ($cargo['ds_cargo'] != $_SESSION['cargo']) {
     $_SESSION['cargo'] = $cargo['ds_cargo'];
+
 }
-if (isset($_SESSION['cargo'])) {
-    if ($_SESSION['cargo'] == 'admin') {
 
+
+$sql = "SELECT * FROM Categorias";
+$result = $conexao->query($sql);
+
+
+if (isset($_POST['cadastrar'])) {
+    $nome = $_POST['nm_categoria'];
+    $descricao = $_POST['ds_categoria'];
+   
+
+    $enviar = $conexao->prepare('insert into categorias (nm_categoria,  ds_categoria) 
+VALUES (?, ?)');
+    $enviar->bind_param('ss', $nome, $descricao);
+    if ($enviar->execute()) {
+
+        $_SESSION['mensagemJs'] = "alert('categoria Cadastrado com Sucesso')";
+    } else {
+
+        $_SESSION['mensagemJs'] = "alert('ERRO ao cadastrar categoria')";
     }
+    header('location:categorias.php');
+    exit;
+}
 
+if (isset($_POST['editar'])) {
+    $nome = $_POST['nm_categoria'];
+    $descricao = $_POST['ds_categoria'];
+    $status = $_POST['status'];
+    $id = $_POST['cd_categoria'];
+
+    $editar = $conexao->prepare('UPDATE categorias SET nm_categoria = ?, ds_categoria= ?, status = ?  WHERE cd_categoria = ?');
+    $editar->bind_param('sssi', $nome, $descricao,$status, $id);
+
+    if ($editar->execute()) {
+
+
+        $_SESSION['mensagemJs'] = "alert('categoria Editado com Sucesso')";
+    } else {
+
+
+        $_SESSION['mensagemJs'] = "alert('ERRO ao Editar categoria')";
+    }
+    header('location:categorias.php');
+    exit;
+}
+
+
+if (isset($_POST['excluir'])) {
+    $id = $_POST['id'];
+    $status = "inativo";
+    $excluir = $conexao->prepare('UPDATE categorias SET status = ? where cd_categoria=?');
+    $excluir->bind_param('si', $status, $id);
+    if ($excluir->execute()) {
+        $_SESSION['mensagemJs'] = "alert('categoria Excluido com Sucesso')";
+    } else {
+        $_SESSION['mensagemJs'] = "alert('ERRO ao Excluir categoria')";
+    }
+    header('location:categorias.php');
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -28,249 +97,209 @@ if (isset($_SESSION['cargo'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Categorias - Estoque</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-        body {
-            background: #f1f5f9;
-            color: #1e293b;
-        }
-
-
-        .navbar {
-            height: 65px;
-            width: 100%;
-            background: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 25px;
-            border-bottom: 1px solid #e2e8f0;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-        }
-
-        .logo {
-            font-size: 22px;
-            font-weight: bold;
-            color: #2563eb;
-        }
-
-        .usuario {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .usuario-info {
-            text-align: right;
-        }
-
-        .usuario-nome {
-            font-weight: bold;
-        }
-
-        .usuario-cargo {
-            font-size: 12px;
-            color: #64748b;
-        }
-
-        .btn-sair {
-            background: #ef4444;
-            color: white;
-            text-decoration: none;
-            padding: 9px 15px;
-            border-radius: 7px;
-            transition: 0.2s;
-        }
-
-        .btn-sair:hover {
-            background: #dc2626;
-        }
-
-
-        .sidebar {
-            position: fixed;
-            top: 65px;
-            left: 0;
-            width: 240px;
-            height: calc(100vh - 65px);
-            background: #1e293b;
-            padding: 20px 12px;
-        }
-
-        .menu-titulo {
-            color: #94a3b8;
-            font-size: 12px;
-            text-transform: uppercase;
-            padding: 10px 15px;
-            margin-bottom: 5px;
-        }
-
-        .menu a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #cbd5e1;
-            text-decoration: none;
-            padding: 13px 15px;
-            margin-bottom: 5px;
-            border-radius: 7px;
-            transition: 0.2s;
-        }
-
-        .menu a:hover {
-            background: #334155;
-            color: white;
-        }
-
-        .menu a.ativo {
-            background: #2563eb;
-            color: white;
-        }
-
-        .icone {
-            width: 25px;
-            text-align: center;
-        }
-
-
-        .conteudo {
-            margin-left: 240px;
-            padding: 95px 30px 30px;
-        }
-
-        .cabecalho-pagina {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .cabecalho-pagina h1 {
-            font-size: 28px;
-        }
-
-        .cabecalho-pagina p {
-            color: #64748b;
-            margin-top: 5px;
-        }
-
-        .btn-adicionar {
-            background: #2563eb;
-            color: white;
-            text-decoration: none;
-            padding: 12px 18px;
-            border-radius: 7px;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-
-        .btn-adicionar:hover {
-            background: #1d4ed8;
-        }
-
-
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .card h2 {
-            margin-bottom: 10px;
-        }
-
-        .card p {
-            color: #64748b;
-        }
-
-
-        @media (max-width: 700px) {
-            .sidebar {
-                width: 70px;
-            }
-
-            .menu-titulo {
-                display: none;
-            }
-
-            .menu a {
-                justify-content: center;
-            }
-
-            .menu a span:not(.icone) {
-                display: none;
-            }
-
-            .conteudo {
-                margin-left: 70px;
-            }
-
-            .usuario-info {
-                display: none;
-            }
-
-            .cabecalho-pagina {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-        }
-    </style>
+    <title>Categorias - Estoque</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/categorias.css">
+  
 </head>
 
 <body>
     <nav class="navbar">
-        <div class="logo"> 📦 Estoque </div>
+        <div class="logo">📦 Estoque</div>
         <div class="usuario">
             <div class="usuario-info">
-                <div class="usuario-nome"> <?php echo $_SESSION['nome'] ?? 'Usuário'; ?> </div>
-                <div class="usuario-cargo"> <?php echo $_SESSION['cargo'] ?? 'Funcionário'; ?> </div>
-            </div> <a href="logout.php" class="btn-sair"> Sair </a>
+                <div class="usuario-nome"><?php echo $_SESSION['nome'] ?? 'Usuário'; ?></div>
+                <div class="usuario-cargo"><?php echo $_SESSION['cargo'] ?? 'Funcionário'; ?></div>
+            </div>
+            <a href="logout.php" class="btn-sair">Sair</a>
         </div>
     </nav>
+
     <aside class="sidebar">
         <div class="menu">
-            <div class="menu-titulo"> Menu </div> <a href="index.php" > <span class="icone">🏠</span>
-                <span>Dashboard</span> </a> <a href="produtos.php"> <span class="icone">📦</span> <span>Produtos</span>
-            </a> 
-             <?php if (isset($_SESSION['cargo']) && $_SESSION['cargo'] == 'admin' ||  $_SESSION['cargo'] == 'estoquista'  ): ?>
-            <a href="categorias.php" class="ativo" > <span class="icone">🏷️</span> 
-            <span>Categorias</span> </a> 
-               <?php endif ?>
-            <a
-                href="compras.php"> <span class="icone">🛒</span> <span>Compras</span> </a> <a href="vendas.php"> <span
-                    class="icone">💰</span> <span>Vendas</span>
-
-            </a> <?php if (isset($_SESSION['cargo']) && $_SESSION['cargo'] == 'admin'): ?>
-                <a href="funcionarios.php"> <span class="icone">👥</span>
+            <div class="menu-titulo">Menu</div>
+            <a href="index.php">
+                <span class="icone">🏠</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="produtos.php">
+                <span class="icone">📦</span>
+                <span>Produtos</span>
+            </a>
+            <?php if (isset($_SESSION['cargo']) && ($_SESSION['cargo'] == 'admin' || $_SESSION['cargo'] == 'estoquista')): ?>
+                <a href="categorias.php" class="ativo">
+                    <span class="icone">🏷️</span>
+                    <span>Categorias</span>
+                </a>
+            <?php endif; ?>
+            <a href="compras.php">
+                <span class="icone">🛒</span>
+                <span>Compras</span>
+            </a>
+            <a href="vendas.php">
+                <span class="icone">💰</span>
+                <span>Vendas</span>
+            </a>
+            <?php if (isset($_SESSION['cargo']) && $_SESSION['cargo'] == 'admin'): ?>
+                <a href="categorias.php">
+                    <span class="icone">👥</span>
                     <span>Funcionários</span>
                 </a>
-            <?php endif ?>
+            <?php endif; ?>
         </div>
     </aside>
+
     <main class="conteudo">
         <div class="cabecalho-pagina">
             <div>
-                <h1>Dashboard</h1>
-                <p> Gerencie as Dashboard dos produtos. </p>
-            </div> <a href="categoria_cadastrar.php" class="btn-adicionar"> + Nova categoria </a>
+                <h1>Categorias</h1>
+                <p>Gerencie as categorias dos produtos.</p>
+            </div>
+            <button type="button" class="btn btn-adicionar btn-sm" data-toggle="modal"
+                data-target="#modalNovacategoria">
+                + Nova categoria
         </div>
+
         <div class="card">
-            <h2> Gerenciamento de Dashboard </h2>
-            <p> Aqui você poderá cadastrar, editar, ativar e desativar as Dashboard dos produtos. </p>
+            <h2>Gerenciamento de Categorias</h2>
+            <p>Aqui você poderá cadastrar, editar, ativar e desativar as categorias.</p>
+
+
         </div>
+
+        
+        <table class="table table-striped table-hover mt-5">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Código</th>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Status</th>
+                 
+                    <th width="180">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if ($result->num_rows > 0): ?>
+                    <?php while ($linha = $result->fetch_assoc()): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($linha['cd_categoria']) ?></td>
+                            <td><?= htmlspecialchars($linha['nm_categoria']) ?></td>
+                            <td><?= htmlspecialchars($linha['ds_categoria']) ?></td>
+                                       <td><?= htmlspecialchars($linha['status']) ?></td>
+                            
+                            <td>
+                                <div class="d-flex">
+                                    <form action="categorias.php" method="post" class="mr-2">
+                                        <input type="hidden" name="id" value="<?= $linha['cd_categoria'] ?>">
+                                        <button type="submit" name="excluir" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</button>
+                                    </form>
+                                    <button type="button" class="btn btn-warning btn-editar btn-sm"
+                                        data-id="<?= $linha['cd_categoria'] ?>"
+                                        data-nome="<?= htmlspecialchars($linha['nm_categoria']) ?>"
+                                        data-descricao="<?= htmlspecialchars($linha['ds_categoria']) ?>"
+                                        data-status="<?= $linha['status'] ?>"
+                                        data-toggle="modal" data-target="#modalEditarcategoria">
+                                        Editar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="9" class="text-center">Nenhuma Categoria cadastrada.</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </main>
+
+    <div class="modal fade" id="modalNovacategoria" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="post" action="categorias.php">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Nova Categoria</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" class="form-control" name="nm_categoria" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <input type="text" class="form-control" name="ds_categoria" required>
+                        </div>
+                       
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" name="cadastrar" class="btn btn-primary">Adicionar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="modalEditarcategoria" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="post" action="categorias.php">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Editar Categoria</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="cd_categoria" id="editar_id">
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" class="form-control" name="nm_categoria" id="editar_nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <input type="text" class="form-control" name="ds_categoria" id="editar_descricao"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                              <select class="form-control" name="status" id="editar_status" required>
+                                <option value="ativo">Ativo</option>
+                                <option value="inativo">Inativo</option>
+                            </select>
+                        </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" name="editar" class="btn btn-primary">Salvar alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const botoesEditar = document.querySelectorAll(".btn-editar");
+            botoesEditar.forEach(function (botao) {
+                botao.addEventListener("click", function () {
+                    document.getElementById("editar_id").value = this.dataset.id;
+                    document.getElementById("editar_nome").value = this.dataset.nome;
+                    document.getElementById("editar_descricao").value = this.dataset.descricao;
+                    document.getElementById("editar_status").value = this.dataset.status;
+                });
+            });
+        });
+        <?php if (isset($_SESSION['mensagemJs'])) {
+            echo $_SESSION['mensagemJs'];
+            unset($_SESSION['mensagemJs']);
+        } ?>
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"></script>
 </body>
 
 </html>
