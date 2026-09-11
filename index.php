@@ -339,7 +339,7 @@ while ($linha = $resultado->fetch_assoc()) {
 
 <body>
     <nav class="navbar">
-        <div class="logo">📦 Estoque</div>
+        <div class="logo"> Estoque</div>
         <div class="usuario">
             <div class="usuario-info">
                 <div class="usuario-nome">
@@ -374,10 +374,15 @@ while ($linha = $resultado->fetch_assoc()) {
                     <span>Categorias</span>
                 </a>
             <?php endif; ?>
+             <?php if (
+                isset($_SESSION['cargo']) && ($_SESSION['cargo'] == 'admin' || $_SESSION['cargo'] ==
+                    'estoquista')
+            ): ?>
             <a href="compras.php">
                 <span class="icone">🛒</span>
                 <span>Compras</span>
             </a>
+             <?php endif; ?>
             <a href="vendas.php">
                 <span class="icone">💰</span>
                 <span>Vendas</span>

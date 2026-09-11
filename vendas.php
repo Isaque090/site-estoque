@@ -147,7 +147,7 @@ if (isset($_GET['ver_itens'])) {
 
 <body>
     <nav class="navbar">
-        <div class="logo">📦 Estoque</div>
+        <div class="logo">Estoque</div>
         <div class="usuario">
             <div class="usuario-info">
                 <div class="usuario-nome"><?= $_SESSION['nome'] ?? 'Usuário' ?></div>
@@ -165,7 +165,15 @@ if (isset($_GET['ver_itens'])) {
             <?php if (isset($_SESSION['cargo']) && ($_SESSION['cargo'] == 'admin' || $_SESSION['cargo'] == 'estoquista')): ?>
                 <a href="categorias.php"><span class="icone">🏷️</span><span>Categorias</span></a>
             <?php endif; ?>
-            <a href="compras.php"><span class="icone">🛒</span><span>Compras</span></a>
+         <?php if (
+                isset($_SESSION['cargo']) && ($_SESSION['cargo'] == 'admin' || $_SESSION['cargo'] ==
+                    'estoquista')
+            ): ?>
+            <a href="compras.php">
+                <span class="icone">🛒</span>
+                <span>Compras</span>
+            </a>
+             <?php endif; ?>
             <a href="vendas.php" class="ativo"><span class="icone">💰</span><span>Vendas</span></a>
             <?php if (isset($_SESSION['cargo']) && $_SESSION['cargo'] == 'admin'): ?>
                 <a href="funcionarios.php"><span class="icone">👥</span><span>Funcionários</span></a>

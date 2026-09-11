@@ -1,27 +1,40 @@
 <?php
 include_once('inc/config.php');
 session_start();
-if (!isset($_SESSION['login'])) {
+
+if (!isset($_SESSION['login']) || $_SESSION['login'] == false) {
     header('location:login.php');
-} else if ($_SESSION['login'] == false) {
-    header('location:login.php');
+    exit;
 }
-$smt = $conexao->prepare('select ds_cargo from Funcionarios where ds_email=? ');
+
+$smt = $conexao->prepare('SELECT cd_funcionario, nm_funcionario, ds_cargo FROM Funcionarios WHERE ds_email = ?');
 $smt->bind_param('s', $_SESSION['email']);
 $smt->execute();
 
 $resultado = $smt->get_result();
-$cargo = $resultado->fetch_assoc();
-if ($cargo['ds_cargo'] != $_SESSION['cargo']) {
-    $_SESSION['cargo'] = $cargo['ds_cargo'];
+$funcionario = $resultado->fetch_assoc();
+
+if (!$funcionario) {
+    session_destroy();
+    header('location:login.php');
+    exit;
 }
-if (isset($_SESSION['cargo'])) {
-    if ($_SESSION['cargo'] == 'admin') {
 
-    }
+$_SESSION['id'] = $funcionario['cd_funcionario'];
+$_SESSION['nome'] = $funcionario['nm_funcionario'];
+$_SESSION['cargo'] = $funcionario['ds_cargo'];
 
+$sql = "SELECT cd_produto, nm_produto, vl_produto, dt_validade_produto, ds_produto, qt_estoque
+        FROM produtos
+        ORDER BY nm_produto ASC";
+
+$result = $conexao->query($sql);
+
+if (!$result) {
+    die('Erro ao buscar produtos: ' . $conexao->error);
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -29,7 +42,9 @@ if (isset($_SESSION['cargo'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Produtos - Estoque</title>
-     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+
     <style>
         * {
             margin: 0;
@@ -97,6 +112,8 @@ if (isset($_SESSION['cargo'])) {
 
         .btn-sair:hover {
             background: #dc2626;
+            color: white;
+            text-decoration: none;
         }
 
         .sidebar {
@@ -179,6 +196,8 @@ if (isset($_SESSION['cargo'])) {
 
         .btn-adicionar:hover {
             background: #0284c7;
+            color: white;
+            text-decoration: none;
         }
 
         .card {
@@ -191,12 +210,107 @@ if (isset($_SESSION['cargo'])) {
         }
 
         .card h2 {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             color: #f1f5f9;
         }
 
-        .card p {
+        .tabela-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .tabela {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tabela th {
+            color: #38bdf8;
+            text-align: left;
+            padding: 15px 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            white-space: nowrap;
+        }
+
+        .tabela td {
+            padding: 15px 12px;
+            color: #e2e8f0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            white-space: nowrap;
+        }
+
+        .tabela tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .descricao {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .estoque {
+            font-weight: bold;
+        }
+
+        .estoque-baixo {
+            color: #f87171 !important;
+        }
+
+        .estoque-normal {
+            color: #4ade80 !important;
+        }
+
+        .validade-vencida {
+            color: #f87171 !important;
+            font-weight: bold;
+        }
+
+        .validade-proxima {
+            color: #facc15 !important;
+            font-weight: bold;
+        }
+
+        .btn-editar {
+            background: #f59e0b;
+            color: white;
+            text-decoration: none;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .btn-editar:hover {
+            background: #d97706;
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-excluir {
+            background: #ef4444;
+            color: white;
+            text-decoration: none;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-excluir:hover {
+            background: #dc2626;
+        }
+
+        .sem-produtos {
+            text-align: center;
+            padding: 40px;
             color: #94a3b8;
+        }
+
+        .quantidade {
+            color: #94a3b8;
+            margin-bottom: 15px;
         }
 
         @media (max-width: 700px) {
@@ -218,6 +332,7 @@ if (isset($_SESSION['cargo'])) {
 
             .conteudo {
                 margin-left: 70px;
+                padding: 90px 15px 20px;
             }
 
             .usuario-info {
@@ -229,70 +344,244 @@ if (isset($_SESSION['cargo'])) {
                 align-items: flex-start;
                 gap: 15px;
             }
+
+            .cabecalho-pagina h1 {
+                font-size: 24px;
+            }
+
+            .card {
+                padding: 15px;
+            }
         }
     </style>
 </head>
 
 <body>
+
     <nav class="navbar">
-        <div class="logo">📦 Estoque</div>
-        <div class="usuario">
-            <div class="usuario-info">
-                <div class="usuario-nome"><?php echo $_SESSION['nome'] ?? 'Usuário'; ?></div>
-                <div class="usuario-cargo"><?php echo $_SESSION['cargo'] ?? 'Funcionário'; ?></div>
-            </div>
-            <a href="logout.php" class="btn-sair">Sair</a>
+
+        <div class="logo">
+            Estoque
         </div>
+
+        <div class="usuario">
+
+            <div class="usuario-info">
+
+                <div class="usuario-nome">
+                    <?php echo htmlspecialchars($_SESSION['nome'] ?? 'Usuário'); ?>
+                </div>
+
+                <div class="usuario-cargo">
+                    <?php echo htmlspecialchars($_SESSION['cargo'] ?? 'Funcionário'); ?>
+                </div>
+
+            </div>
+
+            <a href="logout.php" class="btn-sair">
+                Sair
+            </a>
+
+        </div>
+
     </nav>
 
     <aside class="sidebar">
+
         <div class="menu">
-            <div class="menu-titulo">Menu</div>
+
+            <div class="menu-titulo">
+                Menu
+            </div>
+
             <a href="index.php">
                 <span class="icone">🏠</span>
                 <span>Dashboard</span>
             </a>
+
             <a href="produtos.php" class="ativo">
                 <span class="icone">📦</span>
                 <span>Produtos</span>
             </a>
+
             <?php if (isset($_SESSION['cargo']) && ($_SESSION['cargo'] == 'admin' || $_SESSION['cargo'] == 'estoquista')): ?>
+
                 <a href="categorias.php">
                     <span class="icone">🏷️</span>
                     <span>Categorias</span>
                 </a>
+
             <?php endif; ?>
+
+           <?php if (
+                isset($_SESSION['cargo']) && ($_SESSION['cargo'] == 'admin' || $_SESSION['cargo'] ==
+                    'estoquista')
+            ): ?>
             <a href="compras.php">
                 <span class="icone">🛒</span>
                 <span>Compras</span>
             </a>
+             <?php endif; ?>
+
             <a href="vendas.php">
                 <span class="icone">💰</span>
                 <span>Vendas</span>
             </a>
+
             <?php if (isset($_SESSION['cargo']) && $_SESSION['cargo'] == 'admin'): ?>
+
                 <a href="funcionarios.php">
                     <span class="icone">👥</span>
                     <span>Funcionários</span>
                 </a>
+
             <?php endif; ?>
+
         </div>
+
     </aside>
 
     <main class="conteudo">
+
         <div class="cabecalho-pagina">
+
             <div>
                 <h1>Produtos</h1>
                 <p>Gerencie os produtos do estoque.</p>
             </div>
-            <a href="produto_cadastrar.php" class="btn-adicionar">+ Novo Produto</a>
+
+            <a href="produto_cadastrar.php" class="btn-adicionar">
+                + Novo Produto
+            </a>
+
         </div>
 
         <div class="card">
-            <h2>Gerenciamento de Produtos</h2>
-            <p>Aqui você poderá cadastrar, editar e visualizar os produtos.</p>
+
+            <h2>Produtos cadastrados</h2>
+
+            <div class="quantidade">
+                <?php echo $result->num_rows; ?> produto(s) cadastrado(s)
+            </div>
+
+            <?php if ($result->num_rows > 0): ?>
+
+                <div class="tabela-container">
+
+                    <table class="tabela">
+
+                        <thead>
+
+                            <tr>
+                                <th>Código</th>
+                                <th>Produto</th>
+                                <th>Preço</th>
+                                <th>Validade</th>
+                                <th>Descrição</th>
+                                <th>Estoque</th>
+                                
+           <?php if (
+                isset($_SESSION['cargo']) && ($_SESSION['cargo'] == 'admin' || $_SESSION['cargo'] ==
+                    'estoquista')
+            ): ?>
+                                <th>Ações</th>
+                                 <?php endif; ?>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            <?php while ($produto = $result->fetch_assoc()): ?>
+
+                                <?php
+                                $dataValidade = strtotime($produto['dt_validade_produto']);
+                                $hoje = strtotime(date('Y-m-d'));
+                                $trintaDias = strtotime('+30 days');
+
+                                $classeValidade = '';
+
+                                if ($dataValidade < $hoje) {
+                                    $classeValidade = 'validade-vencida';
+                                } elseif ($dataValidade <= $trintaDias) {
+                                    $classeValidade = 'validade-proxima';
+                                }
+
+                                $classeEstoque = $produto['qt_estoque'] <= 10
+                                    ? 'estoque-baixo'
+                                    : 'estoque-normal';
+                                ?>
+
+                                <tr>
+
+                                    <td>
+                                        <?php echo htmlspecialchars($produto['cd_produto']); ?>
+                                    </td>
+
+                                    <td>
+                                        <?php echo htmlspecialchars($produto['nm_produto']); ?>
+                                    </td>
+
+                                    <td>
+                                        R$
+                                        <?php echo number_format($produto['vl_produto'], 2, ',', '.'); ?>
+                                    </td>
+
+                                    <td class="<?php echo $classeValidade; ?>">
+                                        <?php echo date('d/m/Y', $dataValidade); ?>
+                                    </td>
+
+                                    <td class="descricao" title="<?php echo htmlspecialchars($produto['ds_produto']); ?>">
+                                        <?php echo htmlspecialchars($produto['ds_produto']); ?>
+                                    </td>
+
+                                    <td class="estoque <?php echo $classeEstoque; ?>">
+                                        <?php echo htmlspecialchars($produto['qt_estoque']); ?>
+                                    </td>
+                         
+           <?php if (
+                isset($_SESSION['cargo']) && ($_SESSION['cargo'] == 'admin' || $_SESSION['cargo'] ==
+                    'estoquista')
+            ): ?>
+                                    <td>
+
+                                        <a
+                                            href="produto_editar.php?id=<?php echo $produto['cd_produto']; ?>"
+                                            class="btn-editar">
+                                            Editar
+                                        </a>
+
+                                        <a
+                                            href="produto_excluir.php?id=<?php echo $produto['cd_produto']; ?>"
+                                            class="btn-excluir"
+                                            onclick="return confirm('Tem certeza que deseja excluir este produto?');">
+                                            Excluir
+                                        </a>
+
+                                    </td>
+  <?php endif; ?>
+                                </tr>
+
+                            <?php endwhile; ?>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            <?php else: ?>
+
+                <div class="sem-produtos">
+                    Nenhum produto cadastrado.
+                </div>
+
+            <?php endif; ?>
+
         </div>
+
     </main>
+
 </body>
 
 </html>
